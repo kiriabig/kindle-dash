@@ -19,6 +19,8 @@ import convert_photo  # noqa: E402
 import eink  # noqa: E402
 import render_weather  # noqa: E402
 
+EX_TEMPFAIL = 75  # временная ошибка сети: workflow пропускает публикацию
+
 
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -54,11 +56,16 @@ def main():
                 data = json.load(f)
         else:
             lat, lon = wx.get("latitude", "").strip(), wx.get("longitude", "").strip()
-            if lat and lon:
-                lat, lon = float(lat), float(lon)
-            else:
-                lat, lon, _ = render_weather.geocode(wx.get("city"), lang)
-            data = render_weather.fetch(lat, lon)
+            try:
+                if lat and lon:
+                    lat, lon = float(lat), float(lon)
+                else:
+                    lat, lon, _ = render_weather.geocode(wx.get("city"), lang)
+                data = render_weather.fetch(lat, lon)
+            except OSError as e:
+                # Сервер погоды недоступен: картинку не трогаем, на Kindle останется прошлая.
+                print(f"::warning::Open-Meteo недоступен ({e}), картинка не обновлена")
+                sys.exit(EX_TEMPFAIL)
         img = render_weather.render(data, wx.get("city", "").strip(), lang, orientation, a.sample)
         now = render_weather.parse(data, lang)
         _, desc = render_weather.wmo(now["code"], lang)

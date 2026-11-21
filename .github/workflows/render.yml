@@ -30,15 +30,25 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install pillow pillow-heif
-      - run: python dash/build.py -o site/dash.png --preview site/preview.png
-      - run: |
+      - id: build
+        run: |
+          set +e
+          python dash/build.py -o site/dash.png --preview site/preview.png
+          code=$?
+          # 75 = сервер погоды не ответил: пропускаем публикацию, остаётся прошлая картинка
+          if [ "$code" -eq 75 ]; then echo "skip=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          exit "$code"
+      - if: steps.build.outputs.skip != 'true'
+        run: |
           cat > site/index.html <<'HTML'
           <!doctype html><meta charset="utf-8"><title>Kindle dashboard</title>
           <body style="margin:0;background:#888;display:grid;place-items:center;min-height:100vh">
           <img src="preview.png" style="max-width:100%;box-shadow:0 0 20px #0004">
           HTML
-      - uses: actions/upload-pages-artifact@v4
+      - if: steps.build.outputs.skip != 'true'
+        uses: actions/upload-pages-artifact@v4
         with:
           path: site
-      - id: deploy
+      - if: steps.build.outputs.skip != 'true'
+        id: deploy
         uses: actions/deploy-pages@v4

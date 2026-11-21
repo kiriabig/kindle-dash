@@ -114,17 +114,17 @@ def fetch(lat, lon):
     return get_json("https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params))
 
 
-def get_json(url, attempts=4):
+def get_json(url, waits=(5, 10, 20, 30, 40)):
     """GET с повторами: сервер погоды иногда отвечает не с первого раза."""
     req = urllib.request.Request(url, headers={"User-Agent": "kindle-weather-dash/1.0"})
-    for i in range(attempts):
+    for i in range(len(waits) + 1):
         try:
-            with urllib.request.urlopen(req, timeout=40) as r:
+            with urllib.request.urlopen(req, timeout=20) as r:
                 return json.load(r)
         except (OSError, ValueError) as e:  # URLError, таймауты, битый JSON
-            if i == attempts - 1:
+            if i == len(waits):
                 raise
-            wait = 10 * (i + 1)
+            wait = waits[i]
             print(f"попытка {i + 1} не удалась ({e}), повтор через {wait} с", file=sys.stderr)
             time.sleep(wait)
 
