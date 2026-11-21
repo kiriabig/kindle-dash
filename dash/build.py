@@ -60,7 +60,10 @@ def main():
                 lat, lon, _ = render_weather.geocode(wx.get("city"), lang)
             data = render_weather.fetch(lat, lon)
         img = render_weather.render(data, wx.get("city", "").strip(), lang, orientation, a.sample)
-        source = "Open-Meteo" + (" (пример)" if a.sample else "")
+        now = render_weather.parse(data, lang)
+        _, desc = render_weather.wmo(now["code"], lang)
+        source = (f'Open-Meteo{" (пример)" if a.sample else ""}: {now["now"]:%Y-%m-%d %H:%M} '
+                  f'{render_weather.deg(now["temp"])} {desc}, ветер {round(now["wind"])} м/с')
 
     os.makedirs(os.path.dirname(os.path.abspath(a.output)), exist_ok=True)
     eink.save_png(eink.to_kindle(img, orientation, rotate), a.output)
