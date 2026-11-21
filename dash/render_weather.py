@@ -10,6 +10,7 @@ import datetime as dt
 import json
 import os
 import sys
+import time
 import urllib.parse
 import urllib.request
 
@@ -110,18 +111,29 @@ def fetch(lat, lon):
         "timezone": "auto",
         "forecast_days": 6,
     }
-    url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
+    return get_json("https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params))
+
+
+def get_json(url, attempts=4):
+    """GET с повторами: сервер погоды иногда отвечает не с первого раза."""
     req = urllib.request.Request(url, headers={"User-Agent": "kindle-weather-dash/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.load(r)
+    for i in range(attempts):
+        try:
+            with urllib.request.urlopen(req, timeout=40) as r:
+                return json.load(r)
+        except (OSError, ValueError) as e:  # URLError, таймауты, битый JSON
+            if i == attempts - 1:
+                raise
+            wait = 10 * (i + 1)
+            print(f"попытка {i + 1} не удалась ({e}), повтор через {wait} с", file=sys.stderr)
+            time.sleep(wait)
 
 
 def geocode(name, lang="ru"):
     """Находит координаты города по названию (геокодер Open-Meteo)."""
     url = "https://geocoding-api.open-meteo.com/v1/search?" + urllib.parse.urlencode(
         {"name": name, "count": 1, "language": lang})
-    with urllib.request.urlopen(url, timeout=30) as r:
-        res = json.load(r).get("results") or []
+    res = get_json(url).get("results") or []
     if not res:
         raise ValueError(f"город «{name}» не найден")
     return res[0]["latitude"], res[0]["longitude"], res[0]["name"]
