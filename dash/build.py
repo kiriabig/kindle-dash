@@ -47,7 +47,8 @@ def main():
         path = os.path.join(folder, name) if name else convert_photo.latest_photo(folder)
         img = convert_photo.prepare_photo(
             path, orientation, ph.get("fit", "crop").strip(),
-            ph.getfloat("contrast", 1.15), ph.getfloat("gamma", 1.15), ph.getboolean("sharpen", True))
+            ph.getfloat("contrast", 1.15), ph.getfloat("gamma", 1.15), ph.getboolean("sharpen", True),
+            focus=tuple(float(v) for v in ph.get("focus", "0.5,0.5").split(",")))
         source = path
     else:
         wx = cfg["weather"]

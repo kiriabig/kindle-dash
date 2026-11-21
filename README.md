@@ -44,6 +44,7 @@ python3 dash/build.py                 # по config.ini → out/dash.png
 python3 dash/build.py --sample        # погода на тестовых данных
 python3 dash/convert_photo.py ~/Pictures/photo.jpg -o out/photo.png
 python3 dash/convert_photo.py ~/Pictures/photo.jpg --landscape --fit pad
+python3 dash/convert_photo.py ~/Pictures/photo.jpg --landscape --focus 0.5,0.66 --gamma 1.35 --contrast 1.05
 ```
 
 Как готовится фото: поворот по EXIF, обрезка по центру (`crop`) или вписывание с полями (`pad`),

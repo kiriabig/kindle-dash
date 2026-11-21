@@ -36,7 +36,7 @@ def latest_photo(folder):
 
 
 def prepare_photo(path, orientation="portrait", fit="crop", contrast=1.15, gamma=1.15,
-                  sharpen=True, background=255):
+                  sharpen=True, background=255, focus=(0.5, 0.5)):
     """Возвращает картинку в оттенках серого размером под экран (до поворота)."""
     size = eink.target_size(orientation)
     img = Image.open(path)
@@ -48,8 +48,8 @@ def prepare_photo(path, orientation="portrait", fit="crop", contrast=1.15, gamma
         img = Image.alpha_composite(bg, img)
     img = img.convert("L")
 
-    if fit == "crop":  # заполняем весь экран, лишнее обрезаем по центру
-        img = ImageOps.fit(img, size, Image.Resampling.LANCZOS)
+    if fit == "crop":  # заполняем весь экран; focus — какая точка кадра остаётся в центре (0..1)
+        img = ImageOps.fit(img, size, Image.Resampling.LANCZOS, centering=focus)
         img = eink.enhance_photo(img, contrast, gamma, sharpen)
     else:              # вписываем целиком, по краям белые поля
         img = ImageOps.contain(img, size, Image.Resampling.LANCZOS)
@@ -69,11 +69,14 @@ def main():
     p.add_argument("--contrast", type=float, default=1.15)
     p.add_argument("--gamma", type=float, default=1.15)
     p.add_argument("--no-sharpen", action="store_true")
+    p.add_argument("--focus", default="0.5,0.5",
+                   help="что оставить при обрезке: X,Y от 0 до 1 (0.5,0.7 — центр по ширине, ниже середины)")
     a = p.parse_args()
+    focus = tuple(float(v) for v in a.focus.split(","))
 
     path = latest_photo(a.photo) if os.path.isdir(a.photo) else a.photo
     orientation = "landscape" if a.landscape else "portrait"
-    img = prepare_photo(path, orientation, a.fit, a.contrast, a.gamma, not a.no_sharpen)
+    img = prepare_photo(path, orientation, a.fit, a.contrast, a.gamma, not a.no_sharpen, focus=focus)
     os.makedirs(os.path.dirname(os.path.abspath(a.output)), exist_ok=True)
     eink.save_png(eink.to_kindle(img, orientation, a.rotate), a.output)
     print(f"{path} -> {a.output}")
