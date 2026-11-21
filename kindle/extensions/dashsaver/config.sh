@@ -14,6 +14,8 @@ RTC_WAKE=0
 
 # Куда класть картинку для хака заставок (linkss).
 SS_DIR="/mnt/us/linkss/screensavers"
-SS_NAME="bg_ss00.png"
+# Имя совпадает с тестовым файлом, который уже лежит в папке: так linkss
+# точно знает о нём с момента загрузки, а мы просто подменяем содержимое.
+SS_NAME="dash.png"
 
 LOG="/mnt/us/dashsaver.log"
