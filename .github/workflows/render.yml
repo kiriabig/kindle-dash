@@ -1,0 +1,44 @@
+# Каждые 30 минут собирает картинку и публикует её на GitHub Pages:
+#   https://<логин>.github.io/<репозиторий>/dash.png
+name: Render Kindle dashboard
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"   # GitHub запускает по расписанию с задержкой до 10–20 минут
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pillow pillow-heif
+      - run: python dash/build.py -o site/dash.png --preview site/preview.png
+      - run: |
+          cat > site/index.html <<'HTML'
+          <!doctype html><meta charset="utf-8"><title>Kindle dashboard</title>
+          <body style="margin:0;background:#888;display:grid;place-items:center;min-height:100vh">
+          <img src="preview.png" style="max-width:100%;box-shadow:0 0 20px #0004">
+          HTML
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deploy
+        uses: actions/deploy-pages@v4
